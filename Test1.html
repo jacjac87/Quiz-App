@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .container { max-width: 600px; margin: auto; }
+        .question { font-size: 18px; margin-top: 20px; }
+        button { margin-top: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        #result { font-weight: bold; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Quiz</h2>
+        <div id="quiz"></div>
+        <button onclick="submitQuiz()">Submit</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const questions = [
+            { question: "What is 2 + 2?", answers: ["3", "4", "5", "6"], correct: "4" },
+            { question: "Which planet is known as the Red Planet?", answers: ["Earth", "Mars", "Jupiter", "Venus"], correct: "Mars" },
+            { question: "What is the capital of France?", answers: ["Berlin", "Madrid", "Paris", "Rome"], correct: "Paris" }
+        ];
+
+        let attempts = localStorage.getItem("quizAttempts") || 0;
+        if (attempts >= 3) {
+            document.body.innerHTML = "<h2>You have reached the maximum number of attempts.</h2>";
+        } else {
+            loadQuiz();
+        }
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function loadQuiz() {
+            let quizDiv = document.getElementById("quiz");
+            quizDiv.innerHTML = "";
+            shuffle(questions).forEach((q, index) => {
+                let answers = shuffle([...q.answers]);
+                quizDiv.innerHTML += `<div class='question'>${q.question}</div>`;
+                answers.forEach(ans => {
+                    quizDiv.innerHTML += `<label><input type='radio' name='q${index}' value='${ans}'> ${ans}</label><br>`;
+                });
+            });
+        }
+
+        function submitQuiz() {
+            let score = 0;
+            questions.forEach((q, index) => {
+                let selected = document.querySelector(`input[name='q${index}']:checked`);
+                if (selected && selected.value === q.correct) {
+                    score++;
+                }
+            });
+            attempts++;
+            localStorage.setItem("quizAttempts", attempts);
+            document.getElementById("result").innerText = `You scored ${score}/${questions.length}. Attempts left: ${3 - attempts}`;
+            if (attempts >= 3) {
+                document.getElementById("quiz").innerHTML = "<h2>You have reached the maximum number of attempts.</h2>";
+            }
+        }
+    </script>
+</body>
+</html>
