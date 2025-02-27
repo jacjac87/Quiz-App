@@ -3,68 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz</title>
+    <title>Graded Quiz</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; }
-        .container { max-width: 600px; margin: auto; }
-        .question { font-size: 18px; margin-top: 20px; }
-        button { margin-top: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
-        #result { font-weight: bold; margin-top: 20px; }
+        .quiz-container { max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); }
+        .question { margin-bottom: 15px; font-weight: bold; }
+        button { padding: 10px; margin-top: 10px; background: #28a745; color: white; border: none; cursor: pointer; border-radius: 5px; }
+        button:disabled { background: #ccc; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Quiz</h2>
-        <div id="quiz"></div>
-        <button onclick="submitQuiz()">Submit</button>
-        <div id="result"></div>
-    </div>
 
-    <script>
-        const questions = [
-            { question: "What is 2 + 2?", answers: ["3", "4", "5", "6"], correct: "4" },
-            { question: "Which planet is known as the Red Planet?", answers: ["Earth", "Mars", "Jupiter", "Venus"], correct: "Mars" },
-            { question: "What is the capital of France?", answers: ["Berlin", "Madrid", "Paris", "Rome"], correct: "Paris" }
-        ];
+<div class="quiz-container">
+    <h2>Quiz</h2>
+    <form id="quizForm">
+        <div class="question">
+            <p>1. What is the capital of France?</p>
+            <input type="radio" name="q1" value="A"> A) Madrid<br>
+            <input type="radio" name="q1" value="B"> B) Berlin<br>
+            <input type="radio" name="q1" value="C"> C) Paris<br>
+            <input type="radio" name="q1" value="D"> D) Rome<br>
+        </div>
 
-        let attempts = localStorage.getItem("quizAttempts") || 0;
-        if (attempts >= 3) {
-            document.body.innerHTML = "<h2>You have reached the maximum number of attempts.</h2>";
-        } else {
-            loadQuiz();
+        <div class="question">
+            <p>2. What is 5 + 3?</p>
+            <input type="radio" name="q2" value="A"> A) 6<br>
+            <input type="radio" name="q2" value="B"> B) 8<br>
+            <input type="radio" name="q2" value="C"> C) 10<br>
+            <input type="radio" name="q2" value="D"> D) 12<br>
+        </div>
+
+        <button type="button" onclick="submitQuiz()">Submit Quiz</button>
+    </form>
+</div>
+
+<script>
+const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyEKQ3gdRf8H5o72Fg-5EI01xHFZvdzJL207M4_jQ0CbaLbSUpYeELTpb14qzouU-EQ/exec"; // 🔴 Replace with your Google Apps Script URL
+
+// Track attempts using local storage
+let attempts = localStorage.getItem("quizAttempts") || 0;
+if (attempts >= 3) {
+    alert("You have reached the maximum number of attempts.");
+    document.body.innerHTML = "<h2>Max attempts reached.</h2>";
+} else {
+    attempts++;
+    localStorage.setItem("quizAttempts", attempts);
+}
+
+// Function to submit the quiz
+function submitQuiz() {
+    let userId = "User1"; // Change this if tracking multiple users
+    let score = calculateScore();
+    let answers = getUserAnswers();
+
+    let data = { 
+        userId: userId, 
+        attempt: attempts, 
+        score: score, 
+        answers: answers 
+    };
+
+    fetch(GOOGLE_SHEET_URL, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" }
+    })
+    .then(response => response.text())
+    .then(result => console.log(result))
+    .catch(error => console.error("Error:", error));
+
+    alert(`Quiz submitted! Attempt: ${attempts}, Score: ${score}`);
+}
+
+// Function to calculate score
+function calculateScore() {
+    let correctAnswers = { "q1": "C", "q2": "B" }; // Correct answers
+    let score = 0;
+    
+    Object.keys(correctAnswers).forEach(question => {
+        let selected = document.querySelector(`input[name="${question}"]:checked`);
+        if (selected && selected.value === correctAnswers[question]) {
+            score += 1; // 1 point per correct answer
         }
+    });
 
-        function shuffle(array) {
-            return array.sort(() => Math.random() - 0.5);
-        }
+    return score;
+}
 
-        function loadQuiz() {
-            let quizDiv = document.getElementById("quiz");
-            quizDiv.innerHTML = "";
-            shuffle(questions).forEach((q, index) => {
-                let answers = shuffle([...q.answers]);
-                quizDiv.innerHTML += `<div class='question'>${q.question}</div>`;
-                answers.forEach(ans => {
-                    quizDiv.innerHTML += `<label><input type='radio' name='q${index}' value='${ans}'> ${ans}</label><br>`;
-                });
-            });
-        }
+// Function to get selected answers
+function getUserAnswers() {
+    let answers = {};
+    document.querySelectorAll("input[type='radio']:checked").forEach(input => {
+        answers[input.name] = input.value;
+    });
+    return answers;
+}
+</script>
 
-        function submitQuiz() {
-            let score = 0;
-            questions.forEach((q, index) => {
-                let selected = document.querySelector(`input[name='q${index}']:checked`);
-                if (selected && selected.value === q.correct) {
-                    score++;
-                }
-            });
-            attempts++;
-            localStorage.setItem("quizAttempts", attempts);
-            document.getElementById("result").innerText = `You scored ${score}/${questions.length}. Attempts left: ${3 - attempts}`;
-            if (attempts >= 3) {
-                document.getElementById("quiz").innerHTML = "<h2>You have reached the maximum number of attempts.</h2>";
-            }
-        }
-    </script>
 </body>
 </html>
